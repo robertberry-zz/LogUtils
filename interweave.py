@@ -53,9 +53,14 @@ def main():
 
     files = [open(path, "r") for path in args.logs]
 
-    for line in interweave(files, date_matcher):
-        print line,
-
+    try:
+        for line in interweave(files, date_matcher):
+            print line,
+    except IOError, e:
+        if e.errno == 32:
+            exit()
+        else:
+            raise e
 
 if __name__ == "__main__":
     main()

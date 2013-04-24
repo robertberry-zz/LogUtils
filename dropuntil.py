@@ -14,7 +14,7 @@ def main():
 
     with open(args.file, "r") as fp:
         try:
-            for line in itertools.takewhile(lambda l: matcher.match(l), fp):
+            for line in itertools.dropwhile(lambda l: not matcher.search(l), fp):
                 print line,
         except IOError, e:
             if e.errno == 32:

@@ -15,16 +15,20 @@ class FileWrapper(object):
     def next(self):
         self.current_line = self.fp.readline()
         
-        match = self.date_parser.search(self.current_line)
+        if not self.finished:
+            match = self.date_parser.search(self.current_line)
 
-        if match:
-            date_string = match.group(0)
-            try:
-                self.current_time = dateutil.parser.parse(date_string)
-            except ValueError, e:
-                raise RuntimeError("Could not parse date of format " + date_string)
-        else:
-            raise RuntimeError("Could not match date in this line: " + self.current_line)
+            if match:
+                date_string = match.group(0)
+
+                try:
+                    self.current_time = dateutil.parser.parse(date_string)
+                except ValueError, e:
+                    raise RuntimeError("Could not parse date of format " + date_string)
+            else:
+                # just try to skip the line
+                self.next()
+                #raise RuntimeError("Could not match date in this line: " + self.current_line)
 
     @property
     def finished(self):
@@ -32,15 +36,13 @@ class FileWrapper(object):
 
 def interweave(files, date_matcher):
     wrappers = [FileWrapper(f, date_matcher) for f in files]
+    wrappers = [w for w in wrappers if not w.finished]
 
     while len(wrappers) > 0:
-        wrappers = [w for w in wrappers if not w.finished]
-
-        next_wrapper = max(wrappers, key=lambda w: w.current_time)
-
+        next_wrapper = min(wrappers, key=lambda w: w.current_time)
         yield next_wrapper.current_line
-
         next_wrapper.next()
+        wrappers = [w for w in wrappers if not w.finished]
 
 def main():
     parser = argparse.ArgumentParser(description="Interweave some logs")
